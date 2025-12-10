@@ -57,7 +57,7 @@ const patientSchema = new mongoose.schema( {
     }
 } )
 
-const validation = () =>{
+const validation = ( ) =>{
 
 }
 
