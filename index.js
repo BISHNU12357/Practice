@@ -1,6 +1,6 @@
 import express from "express"
 import mongoose from "mongoose"
-import { z } from zod;
+import { z } from "zod";
 
 const app = express();
 
@@ -16,7 +16,7 @@ const db = async () => {
     }
 }
 
-const patientSchema = new mongoose.schema( {
+const patientSchema = new mongoose.Schema( {
     First_name: {
         type: String,
         required: true,
@@ -33,7 +33,7 @@ const patientSchema = new mongoose.schema( {
         trim: true
     },
     password:{
-        type: string,
+        type: String,
         required: true,
         trim: true
     },
@@ -57,16 +57,72 @@ const patientSchema = new mongoose.schema( {
     }
 } )
 
-const validation = ( ) =>{
+const patient = mongoose.model("patient", patientSchema);
 
-}
+const organValidation = z.object({
+    no: z.number(),
+    isHealthy: z.boolean()
+})
+
+const userValidation = z.object({
+    First_name: z.string().max(20),
+    Last_name: z.string().max(10),
+    password: z.string()
+                .min(8, "The password neeeds to be atleast of 8 characters")
+                .regex(/[0-9]/, "password must conatain a number")
+                .regex(/[!@#$%^&*]/, "password should contain atleast one special character"),
+    organs: z.object({
+        heart: organValidation,
+        kidney: organValidation,
+        liver: organValidation,
+    })
+})  
+
+
 
 db();
 app.use( express.json() );
 
-app.get( '/', ( req, res ) => {
+const signUp = async(req, res) => {
+    const patientDetails = {
+        First_name: req.body.First_name,
+        Last_name:req.body.Last_name,
+        userName:req.body.userName,
+        password:req.body.password,
+        age:req.body.age,
+        organs:req.body.organs
+    }
 
+    const suc = userValidation.safeParse(patientDetails);
+
+    if(!suc.success){
+        return res.json({
+            message: "vlaidation Failed"
+        });
+    }
+
+
+    const newPatient = new patient(patientDetails);
+    const saveStatus = await newPatient.save();
+
+    if(saveStatus){
+        res.json({
+            message: "The details have been saved"
+        })
+    }else{
+        res.json({
+            message: "could not save"
+        })
+    }
+}
+
+app.get( '/', ( req, res ) => {
+    res.status(200).json({
+        message: "This is me"
+    })
 } )
+
+app.post('/signUp', signUp);
 
 app.listen( port, () => {
     console.log( `listening in ${ port }` );
